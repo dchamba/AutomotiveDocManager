@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { productVersionsApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { insertProductVersionSchema, type ProductVersion, type InsertProductVersion, type Product } from "@shared/schema";
+
+// Form schema that accepts string dates and handles null descriptions
+const versionFormSchema = insertProductVersionSchema.extend({
+  versionDate: z.string().min(1, "Data versione è obbligatoria"),
+  description: z.string().nullable().optional().transform((val) => val || ""),
+});
+
+type VersionFormData = z.infer<typeof versionFormSchema>;
 
 interface VersionFormProps {
   version?: ProductVersion;
@@ -20,8 +29,8 @@ interface VersionFormProps {
 export default function VersionForm({ version, products, onSuccess, onCancel }: VersionFormProps) {
   const { toast } = useToast();
   
-  const form = useForm<InsertProductVersion>({
-    resolver: zodResolver(insertProductVersionSchema),
+  const form = useForm<VersionFormData>({
+    resolver: zodResolver(versionFormSchema),
     defaultValues: {
       productId: version?.productId || 0,
       versionNumber: version?.versionNumber || "",
@@ -68,11 +77,14 @@ export default function VersionForm({ version, products, onSuccess, onCancel }: 
     },
   });
 
-  const onSubmit = (data: InsertProductVersion) => {
-    // Convert date string to timestamp
-    const submissionData = {
-      ...data,
-      versionDate: new Date(data.versionDate),
+  const onSubmit = (data: VersionFormData) => {
+    // Transform the form data to match the API expectations
+    const submissionData: InsertProductVersion = {
+      productId: data.productId,
+      versionNumber: data.versionNumber,
+      versionDate: new Date(data.versionDate), // Convert string to Date
+      responsible: data.responsible,
+      description: data.description,
     };
 
     if (version) {
