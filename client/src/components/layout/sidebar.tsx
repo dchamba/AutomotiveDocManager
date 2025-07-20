@@ -68,16 +68,14 @@ export function Sidebar() {
             
             return (
               <li key={item.href}>
-                <Link href={item.href}>
-                  <a className={cn(
-                    "w-full flex items-center space-x-3 px-3 py-2 text-left rounded-lg transition-colors",
-                    isActive 
-                      ? "bg-automotive-blue text-white" 
-                      : "text-gray-700 hover:bg-gray-100"
-                  )}>
-                    <Icon className="h-5 w-5" />
-                    <span>{item.name}</span>
-                  </a>
+                <Link href={item.href} className={cn(
+                  "w-full flex items-center space-x-3 px-3 py-2 text-left rounded-lg transition-colors",
+                  isActive 
+                    ? "bg-automotive-blue text-white" 
+                    : "text-gray-700 hover:bg-gray-100"
+                )}>
+                  <Icon className="h-5 w-5" />
+                  <span>{item.name}</span>
                 </Link>
               </li>
             );
@@ -94,16 +92,14 @@ export function Sidebar() {
                 
                 return (
                   <li key={item.href}>
-                    <Link href={item.href}>
-                      <a className={cn(
-                        "w-full flex items-center space-x-3 px-3 py-2 text-left rounded-lg transition-colors",
-                        isActive 
-                          ? "bg-automotive-blue text-white" 
-                          : "text-gray-700 hover:bg-gray-100"
-                      )}>
-                        <Icon className="h-5 w-5" />
-                        <span>{item.name}</span>
-                      </a>
+                    <Link href={item.href} className={cn(
+                      "w-full flex items-center space-x-3 px-3 py-2 text-left rounded-lg transition-colors",
+                      isActive 
+                        ? "bg-automotive-blue text-white" 
+                        : "text-gray-700 hover:bg-gray-100"
+                    )}>
+                      <Icon className="h-5 w-5" />
+                      <span>{item.name}</span>
                     </Link>
                   </li>
                 );
@@ -117,16 +113,14 @@ export function Sidebar() {
             
             return (
               <li key={item.href}>
-                <Link href={item.href}>
-                  <a className={cn(
-                    "w-full flex items-center space-x-3 px-3 py-2 text-left rounded-lg transition-colors",
-                    isActive 
-                      ? "bg-automotive-blue text-white" 
-                      : "text-gray-700 hover:bg-gray-100"
-                  )}>
-                    <Icon className="h-5 w-5" />
-                    <span>{item.name}</span>
-                  </a>
+                <Link href={item.href} className={cn(
+                  "w-full flex items-center space-x-3 px-3 py-2 text-left rounded-lg transition-colors",
+                  isActive 
+                    ? "bg-automotive-blue text-white" 
+                    : "text-gray-700 hover:bg-gray-100"
+                )}>
+                  <Icon className="h-5 w-5" />
+                  <span>{item.name}</span>
                 </Link>
               </li>
             );
