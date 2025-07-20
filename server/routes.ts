@@ -7,6 +7,15 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 
+// Server-side schema that accepts string dates
+const serverProductVersionSchema = z.object({
+  productId: z.number(),
+  versionNumber: z.string(),
+  versionDate: z.string(),
+  responsible: z.string(),
+  description: z.string().optional().nullable(),
+});
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Clients routes
   app.get("/api/clients", async (req, res) => {
@@ -160,13 +169,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/product-versions", async (req, res) => {
     try {
-      const validatedData = insertProductVersionSchema.parse(req.body);
-      const version = await storage.createProductVersion(validatedData);
+      console.log("Received product version data:", req.body);
+      const validatedData = serverProductVersionSchema.parse(req.body);
+      
+      // Convert string date to Date object for database
+      const versionData = {
+        ...validatedData,
+        versionDate: new Date(validatedData.versionDate)
+      };
+      
+      const version = await storage.createProductVersion(versionData);
       res.status(201).json(version);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.log("Validation errors:", error.errors);
         return res.status(400).json({ message: "Invalid version data", errors: error.errors });
       }
+      console.log("Server error:", error);
       res.status(500).json({ message: "Failed to create product version" });
     }
   });
@@ -174,8 +193,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/product-versions/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const validatedData = insertProductVersionSchema.partial().parse(req.body);
-      const version = await storage.updateProductVersion(id, validatedData);
+      const validatedData = serverProductVersionSchema.partial().parse(req.body);
+      
+      // Convert string date to Date object if present
+      const versionData = validatedData.versionDate ? {
+        ...validatedData,
+        versionDate: new Date(validatedData.versionDate)
+      } : validatedData;
+      
+      const version = await storage.updateProductVersion(id, versionData);
       res.json(version);
     } catch (error) {
       if (error instanceof z.ZodError) {
