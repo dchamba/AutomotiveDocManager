@@ -4,7 +4,7 @@ import { Link } from "wouter";
 import { 
   BarChart3, Building2, Package, GitBranch, 
   BarChart, FileSpreadsheet, Settings, FileText, 
-  Menu, X
+  ChevronLeft, ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -93,24 +93,15 @@ export function Sidebar({ onCollapseChange }: SidebarProps) {
       "bg-white shadow-sm border-r border-gray-200 overflow-y-auto transition-all duration-300 fixed left-0 top-16 h-[calc(100vh-4rem)] z-40",
       isCollapsed ? "w-16" : "w-64"
     )}>
-      <div className="p-4">
-        {/* Toggle Button */}
-        <div className="flex justify-between items-center mb-4">
-          {!isCollapsed && (
+      <div className="p-4 h-full flex flex-col">
+        {/* Header */}
+        {!isCollapsed && (
+          <div className="mb-4">
             <h2 className="text-lg font-semibold text-gray-800">AutoDoc Pro</h2>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleToggle}
-            className="p-2 hover:bg-gray-100"
-            title={isCollapsed ? "Espandi menu" : "Riduci menu"}
-          >
-            {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
-          </Button>
-        </div>
+          </div>
+        )}
 
-        <ul className="space-y-2">
+        <ul className="space-y-2 flex-1">
           {navigationItems.map((item) => {
             const isActive = location === item.href || (item.href === "/dashboard" && location === "/");
             return (
@@ -146,6 +137,29 @@ export function Sidebar({ onCollapseChange }: SidebarProps) {
             );
           })}
         </ul>
+        
+        {/* Toggle Button at Bottom */}
+        <div className="mt-auto pt-4 border-t border-gray-200">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleToggle}
+            className={cn(
+              "w-full p-2 hover:bg-gray-100 flex items-center",
+              isCollapsed ? "justify-center" : "justify-end"
+            )}
+            title={isCollapsed ? "Espandi menu" : "Riduci menu"}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <>
+                <ChevronLeft className="h-4 w-4 mr-2" />
+                <span className="text-sm">Riduci</span>
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </nav>
   );
