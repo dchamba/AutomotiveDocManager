@@ -85,12 +85,16 @@ export function Sidebar() {
     )}>
       <div className="p-4">
         {/* Toggle Button */}
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-between items-center mb-4">
+          {!isCollapsed && (
+            <h2 className="text-lg font-semibold text-gray-800">AutoDoc Pro</h2>
+          )}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2"
+            className="p-2 hover:bg-gray-100"
+            title={isCollapsed ? "Espandi menu" : "Riduci menu"}
           >
             {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
           </Button>
