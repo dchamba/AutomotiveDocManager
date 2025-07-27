@@ -58,9 +58,19 @@ const otherItems = [
   },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  onCollapseChange?: (collapsed: boolean) => void;
+}
+
+export function Sidebar({ onCollapseChange }: SidebarProps) {
   const [location] = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const handleToggle = () => {
+    const newState = !isCollapsed;
+    setIsCollapsed(newState);
+    onCollapseChange?.(newState);
+  };
 
   const renderNavItem = (item: any, isActive: boolean) => {
     const Icon = item.icon;
@@ -80,7 +90,7 @@ export function Sidebar() {
 
   return (
     <nav className={cn(
-      "bg-white shadow-sm border-r border-gray-200 overflow-y-auto transition-all duration-300",
+      "bg-white shadow-sm border-r border-gray-200 overflow-y-auto transition-all duration-300 fixed left-0 top-16 h-[calc(100vh-4rem)] z-40",
       isCollapsed ? "w-16" : "w-64"
     )}>
       <div className="p-4">
@@ -92,7 +102,7 @@ export function Sidebar() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={handleToggle}
             className="p-2 hover:bg-gray-100"
             title={isCollapsed ? "Espandi menu" : "Riduci menu"}
           >
