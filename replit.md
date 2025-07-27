@@ -4,9 +4,21 @@
 
 AutoDoc Pro is a full-stack web application designed for automotive quality documentation management, specifically implementing AIAG-VDA standards for FMEA (Failure Mode and Effects Analysis), Control Plans, and Flow Charts. The system provides a comprehensive solution for managing clients, products, product versions, and their associated quality documentation.
 
+The application is now fully operational in the Replit environment with PostgreSQL database and sample data for testing.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## Recent Changes
+
+### 2025-01-27 - Flow Chart Functionality Fixed
+- ✅ Fixed flow chart saving and loading issues
+- ✅ Added interface to view existing flow charts by product version
+- ✅ Implemented edit functionality for existing flow charts  
+- ✅ Added sample clients (FIAT, SOGEFI) with products and versions
+- ✅ Resolved TypeScript compilation errors
+- ✅ Fixed database query invalidation for real-time updates
 
 ## System Architecture
 

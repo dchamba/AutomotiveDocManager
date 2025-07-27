@@ -5,18 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { GitBranch, Plus, Package, Building2 } from "lucide-react";
+import { GitBranch, Plus, Package, Building2, FileText, Calendar, User, Edit } from "lucide-react";
 import { clientsApi, productsApi, productVersionsApi, flowChartsApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import FlowEditor from "@/components/flowchart/flow-editor";
-import type { Client, Product, ProductVersion } from "@shared/schema";
+import type { Client, Product, ProductVersion, FlowChart } from "@shared/schema";
 
 export default function FlowChart() {
   const [selectedClient, setSelectedClient] = useState<number | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
   const [isNewFlowDialogOpen, setIsNewFlowDialogOpen] = useState(false);
+  const [editingFlowChart, setEditingFlowChart] = useState<FlowChart | null>(null);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
   const { toast } = useToast();
 
   const { data: clients = [] } = useQuery({
@@ -36,6 +38,12 @@ export default function FlowChart() {
     enabled: !!selectedProduct,
   });
 
+  const { data: flowCharts = [] } = useQuery({
+    queryKey: ["/api/product-versions", selectedVersion, "flowcharts"],
+    queryFn: () => selectedVersion ? flowChartsApi.getByVersion(selectedVersion) : Promise.resolve([]),
+    enabled: !!selectedVersion,
+  });
+
   const createFlowChartMutation = useMutation({
     mutationFn: flowChartsApi.create,
     onSuccess: () => {
@@ -43,12 +51,34 @@ export default function FlowChart() {
         title: "Flow Chart creato",
         description: "Il flow chart è stato salvato con successo.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/flowcharts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/product-versions", selectedVersion, "flowcharts"] });
+      setIsNewFlowDialogOpen(false);
+      setIsCreatingNew(false);
     },
     onError: () => {
       toast({
         title: "Errore",
         description: "Si è verificato un errore durante il salvataggio del flow chart.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateFlowChartMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => flowChartsApi.update(id, data),
+    onSuccess: () => {
+      toast({
+        title: "Flow Chart aggiornato",
+        description: "Il flow chart è stato aggiornato con successo.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/product-versions", selectedVersion, "flowcharts"] });
+      setIsCreatingNew(false);
+      setEditingFlowChart(null);
+    },
+    onError: () => {
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante l'aggiornamento del flow chart.",
         variant: "destructive",
       });
     },
@@ -64,16 +94,27 @@ export default function FlowChart() {
       return;
     }
 
-    createFlowChartMutation.mutate({
+    const chartData = {
       productVersionId: selectedVersion,
       name: flowData.name,
       data: {
         nodes: flowData.nodes,
         edges: flowData.edges,
         processPhases: flowData.processPhases,
-        viewport: { x: 0, y: 0, zoom: 1 },
+        viewport: flowData.viewport || { x: 0, y: 0, zoom: 1 },
       },
-    });
+    };
+
+    if (editingFlowChart) {
+      // Update existing flow chart
+      updateFlowChartMutation.mutate({
+        id: editingFlowChart.id,
+        data: chartData,
+      });
+    } else {
+      // Create new flow chart
+      createFlowChartMutation.mutate(chartData);
+    }
   };
 
   const selectedClientData = clients.find(c => c.id === selectedClient);
@@ -201,21 +242,133 @@ export default function FlowChart() {
         </Card>
       )}
 
+      {/* Flow Charts List */}
+      {selectedVersion && flowCharts.length > 0 && !isCreatingNew && !editingFlowChart && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <FileText className="h-5 w-5" />
+              <span>Flow Chart Esistenti</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {flowCharts.map((flowChart) => (
+                <Card key={flowChart.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center justify-between">
+                      <span>{flowChart.name}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setEditingFlowChart(flowChart)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="space-y-2 text-sm text-gray-600">
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="h-4 w-4" />
+                        <span>Creato: {new Date(flowChart.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="h-4 w-4" />
+                        <span>Modificato: {new Date(flowChart.updatedAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <Button
+                      className="w-full mt-3 bg-automotive-blue hover:bg-blue-700"
+                      onClick={() => setEditingFlowChart(flowChart)}
+                    >
+                      Apri Editor
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <div className="mt-4">
+              <Button 
+                onClick={() => setIsCreatingNew(true)}
+                className="bg-automotive-orange hover:bg-orange-600"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Nuovo Flow Chart
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Flow Chart Editor */}
-      <Card className="min-h-screen">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <GitBranch className="h-5 w-5" />
-            <span>Editor Flow Chart</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {selectedVersion ? (
+      {selectedVersion && (isCreatingNew || editingFlowChart) && (
+        <Card className="min-h-screen">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <GitBranch className="h-5 w-5" />
+                <span>{editingFlowChart ? `Modifica: ${editingFlowChart.name}` : 'Nuovo Flow Chart'}</span>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsCreatingNew(false);
+                  setEditingFlowChart(null);
+                }}
+              >
+                Torna alla Lista
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <FlowEditor
+              flowChartId={editingFlowChart?.id}
               productVersionId={selectedVersion}
               onSave={handleSaveFlowChart}
             />
-          ) : (
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Empty State */}
+      {selectedVersion && flowCharts.length === 0 && !isCreatingNew && (
+        <Card className="min-h-screen">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <GitBranch className="h-5 w-5" />
+              <span>Flow Chart</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-12">
+              <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Nessun Flow Chart Trovato</h3>
+              <p className="text-gray-600 mb-4">
+                Non ci sono flow chart per questa versione del prodotto. Creane uno nuovo per iniziare.
+              </p>
+              <Button 
+                onClick={() => setIsCreatingNew(true)}
+                className="bg-automotive-blue hover:bg-blue-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Crea Primo Flow Chart
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* No Version Selected */}
+      {!selectedVersion && (
+        <Card className="min-h-screen">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <GitBranch className="h-5 w-5" />
+              <span>Editor Flow Chart</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <div className="text-center py-12">
               <GitBranch className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Seleziona Versione Prodotto</h3>
@@ -230,9 +383,9 @@ export default function FlowChart() {
                 Seleziona Versione
               </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

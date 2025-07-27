@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   ReactFlow,
   useNodesState,
@@ -14,6 +15,8 @@ import { Background } from '@reactflow/background';
 import { Controls } from '@reactflow/controls';
 import { MiniMap } from '@reactflow/minimap';
 import '@reactflow/core/dist/style.css';
+
+import { flowChartsApi } from '@/lib/api';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,6 +75,33 @@ export default function FlowEditor({ flowChartId, productVersionId, onSave, read
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [isPhaseDialogOpen, setIsPhaseDialogOpen] = useState(false);
   const [flowName, setFlowName] = useState('Nuovo Flow Chart');
+
+  // Load existing flow chart data if flowChartId is provided
+  const { data: existingFlowChart } = useQuery({
+    queryKey: ["/api/flowcharts", flowChartId],
+    queryFn: () => flowChartId ? flowChartsApi.getById(flowChartId) : Promise.resolve(null),
+    enabled: !!flowChartId,
+  });
+
+  // Load data from existing flow chart
+  useEffect(() => {
+    if (existingFlowChart && existingFlowChart.data) {
+      const chartData = existingFlowChart.data as any;
+      
+      if (Array.isArray(chartData.nodes)) {
+        setNodes(chartData.nodes);
+      }
+      if (Array.isArray(chartData.edges)) {
+        setEdges(chartData.edges);
+      }
+      if (Array.isArray(chartData.processPhases)) {
+        setProcessPhases(chartData.processPhases);
+      }
+      if (existingFlowChart.name) {
+        setFlowName(existingFlowChart.name);
+      }
+    }
+  }, [existingFlowChart, setNodes, setEdges]);
 
   const onConnect = useCallback(
     (params: Connection) => {
