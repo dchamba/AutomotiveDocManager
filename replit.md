@@ -12,13 +12,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### 2025-01-27 - Flow Chart Functionality Fixed
+### 2025-01-27 - Flow Chart Functionality & Mobile UX Improvements
 - ✅ Fixed flow chart saving and loading issues
 - ✅ Added interface to view existing flow charts by product version
 - ✅ Implemented edit functionality for existing flow charts  
 - ✅ Added sample clients (FIAT, SOGEFI) with products and versions
 - ✅ Resolved TypeScript compilation errors
 - ✅ Fixed database query invalidation for real-time updates
+- ✅ Added collapsible sidebar with bottom toggle button for mobile use
+- ✅ Implemented default flow chart table view without requiring product selection
+- ✅ Improved mobile-first responsive design
 
 ## System Architecture
 

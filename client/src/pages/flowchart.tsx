@@ -83,8 +83,8 @@ export default function FlowChart() {
           return charts.map(chart => ({ 
             ...chart, 
             version, 
-            product: product || { code: 'N/A', description: 'N/A' }, 
-            client: client || { code: 'N/A', companyName: 'N/A' }
+            product: product || { id: -1, code: 'N/A', description: 'N/A', clientId: -1, createdAt: new Date() }, 
+            client: client || { id: -1, code: 'N/A', companyName: 'N/A', contactPerson: null, email: null, phone: null, address: null, createdAt: new Date() }
           }));
         } catch (error) {
           console.error('Error fetching charts for version:', version.id, error);
@@ -92,9 +92,7 @@ export default function FlowChart() {
         }
       });
       const results = await Promise.all(allChartsPromises);
-      const flatResults = results.flat();
-      console.log('All flow charts:', flatResults); // Debug log
-      return flatResults;
+      return results.flat();
     },
     enabled: allVersions.length > 0 && allProducts.length > 0 && clients.length > 0,
   });
@@ -322,10 +320,12 @@ export default function FlowChart() {
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              setSelectedClient(chart.client.id);
-                              setSelectedProduct(chart.product.id);
-                              setSelectedVersion(chart.version.id);
-                              setEditingFlowChart(chart);
+                              if ('id' in chart.client && 'id' in chart.product) {
+                                setSelectedClient(chart.client.id);
+                                setSelectedProduct(chart.product.id);
+                                setSelectedVersion(chart.version.id);
+                                setEditingFlowChart(chart);
+                              }
                             }}
                             className="h-7 px-2"
                           >
@@ -496,20 +496,7 @@ export default function FlowChart() {
         </Card>
       )}
 
-      {/* Debug Info */}
-      {!selectedVersion && !allChartsLoading && (
-        <Card className="mb-4">
-          <CardContent className="p-4">
-            <div className="text-sm text-gray-600">
-              <p>Debug Info:</p>
-              <p>Clients: {clients.length}</p>
-              <p>All Products: {allProducts.length}</p>
-              <p>All Versions: {allVersions.length}</p>
-              <p>All Flow Charts: {allFlowCharts.length}</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+
 
       {/* No Version Selected and No Flow Charts */}
       {!selectedVersion && !allChartsLoading && allFlowCharts.length === 0 && (
