@@ -21,14 +21,35 @@ export default function FlowChart() {
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const { toast } = useToast();
 
+  // Get all clients always
   const { data: clients = [] } = useQuery({
     queryKey: ["/api/clients"],
     queryFn: () => clientsApi.getAll(),
   });
 
+  // Get all products always  
+  const { data: allProducts = [] } = useQuery({
+    queryKey: ["/api/products/all"],
+    queryFn: () => productsApi.getAll(),
+  });
+
+  // Get all versions always
+  const { data: allVersions = [] } = useQuery({
+    queryKey: ["/api/versions/all"],
+    queryFn: async () => {
+      const allVersionsPromises = allProducts.map(product => 
+        productVersionsApi.getByProduct(product.id)
+      );
+      const results = await Promise.all(allVersionsPromises);
+      return results.flat();
+    },
+    enabled: allProducts.length > 0,
+  });
+
+  // Filtered data for selections
   const { data: products = [] } = useQuery({
     queryKey: ["/api/products", selectedClient],
-    queryFn: () => selectedClient ? productsApi.getAll(selectedClient) : productsApi.getAll(),
+    queryFn: () => selectedClient ? productsApi.getAll(selectedClient) : allProducts,
     enabled: !!selectedClient,
   });
 
@@ -44,26 +65,38 @@ export default function FlowChart() {
     enabled: !!selectedVersion,
   });
 
-  // Simplified query to get all flow charts with their context
-  const { data: allFlowCharts = [] } = useQuery({
+  // Get all flow charts with their context
+  const { data: allFlowCharts = [], isLoading: allChartsLoading } = useQuery({
     queryKey: ["/api/flowcharts/all"],
     queryFn: async () => {
+      // Ensure we have data first
+      if (!allVersions.length || !allProducts.length || !clients.length) {
+        return [];
+      }
+      
       // Get all flowcharts by getting all versions and their charts
-      const allChartsPromises = versions.map(async (version) => {
-        const charts = await flowChartsApi.getByVersion(version.id);
-        const product = products.find(p => p.id === version.productId);
-        const client = clients.find(c => c.id === product?.clientId);
-        return charts.map(chart => ({ 
-          ...chart, 
-          version, 
-          product: product || { code: 'N/A', description: 'N/A' }, 
-          client: client || { code: 'N/A', companyName: 'N/A' }
-        }));
+      const allChartsPromises = allVersions.map(async (version) => {
+        try {
+          const charts = await flowChartsApi.getByVersion(version.id);
+          const product = allProducts.find(p => p.id === version.productId);
+          const client = clients.find(c => c.id === product?.clientId);
+          return charts.map(chart => ({ 
+            ...chart, 
+            version, 
+            product: product || { code: 'N/A', description: 'N/A' }, 
+            client: client || { code: 'N/A', companyName: 'N/A' }
+          }));
+        } catch (error) {
+          console.error('Error fetching charts for version:', version.id, error);
+          return [];
+        }
       });
       const results = await Promise.all(allChartsPromises);
-      return results.flat();
+      const flatResults = results.flat();
+      console.log('All flow charts:', flatResults); // Debug log
+      return flatResults;
     },
-    enabled: versions.length > 0,
+    enabled: allVersions.length > 0 && allProducts.length > 0 && clients.length > 0,
   });
 
   const createFlowChartMutation = useMutation({
@@ -240,7 +273,7 @@ export default function FlowChart() {
       </div>
 
       {/* Default Flow Charts Table */}
-      {!selectedVersion && allFlowCharts.length > 0 && (
+      {!selectedVersion && !allChartsLoading && allFlowCharts.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -451,8 +484,35 @@ export default function FlowChart() {
         </Card>
       )}
 
+      {/* Loading State */}
+      {!selectedVersion && allChartsLoading && (
+        <Card>
+          <CardContent className="p-8">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-automotive-blue mx-auto mb-4"></div>
+              <p className="text-gray-600">Caricamento flow chart...</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Debug Info */}
+      {!selectedVersion && !allChartsLoading && (
+        <Card className="mb-4">
+          <CardContent className="p-4">
+            <div className="text-sm text-gray-600">
+              <p>Debug Info:</p>
+              <p>Clients: {clients.length}</p>
+              <p>All Products: {allProducts.length}</p>
+              <p>All Versions: {allVersions.length}</p>
+              <p>All Flow Charts: {allFlowCharts.length}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* No Version Selected and No Flow Charts */}
-      {!selectedVersion && allFlowCharts.length === 0 && (
+      {!selectedVersion && !allChartsLoading && allFlowCharts.length === 0 && (
         <Card className="min-h-screen">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
