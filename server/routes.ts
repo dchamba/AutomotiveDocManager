@@ -197,7 +197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = serverProductVersionSchema.partial().parse(req.body);
       
       // Convert string date to Date object if present
-      const versionData: Partial<InsertProductVersion> = validatedData.versionDate ? {
+      const versionData: any = validatedData.versionDate ? {
         ...validatedData,
         versionDate: new Date(validatedData.versionDate)
       } : validatedData;
