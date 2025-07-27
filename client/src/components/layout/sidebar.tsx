@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { Link } from "wouter";
 import { 
   BarChart3, Building2, Package, GitBranch, 
-  BarChart, FileSpreadsheet, Settings, FileText
+  BarChart, FileSpreadsheet, Settings, FileText, 
+  Menu, X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const navigationItems = [
   {
@@ -57,71 +60,74 @@ const otherItems = [
 
 export function Sidebar() {
   const [location] = useLocation();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const renderNavItem = (item: any, isActive: boolean) => {
+    const Icon = item.icon;
+    return (
+      <Link href={item.href} className={cn(
+        "w-full flex items-center px-3 py-2 text-left rounded-lg transition-colors",
+        isCollapsed ? "justify-center" : "space-x-3",
+        isActive 
+          ? "bg-automotive-blue text-white" 
+          : "text-gray-700 hover:bg-gray-100"
+      )}>
+        <Icon className="h-5 w-5 flex-shrink-0" />
+        {!isCollapsed && <span className="font-medium">{item.name}</span>}
+      </Link>
+    );
+  };
 
   return (
-    <nav className="w-64 bg-white shadow-sm border-r border-gray-200 overflow-y-auto">
+    <nav className={cn(
+      "bg-white shadow-sm border-r border-gray-200 overflow-y-auto transition-all duration-300",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
       <div className="p-4">
+        {/* Toggle Button */}
+        <div className="flex justify-end mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-2"
+          >
+            {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
+          </Button>
+        </div>
+
         <ul className="space-y-2">
           {navigationItems.map((item) => {
-            const Icon = item.icon;
             const isActive = location === item.href || (item.href === "/dashboard" && location === "/");
-            
             return (
               <li key={item.href}>
-                <Link href={item.href} className={cn(
-                  "w-full flex items-center space-x-3 px-3 py-2 text-left rounded-lg transition-colors",
-                  isActive 
-                    ? "bg-automotive-blue text-white" 
-                    : "text-gray-700 hover:bg-gray-100"
-                )}>
-                  <Icon className="h-5 w-5" />
-                  <span>{item.name}</span>
-                </Link>
+                {renderNavItem(item, isActive)}
               </li>
             );
           })}
           
-          <li>
-            <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">
-              Documenti
-            </div>
-            <ul className="mt-2 space-y-1">
-              {documentItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = location === item.href;
-                
-                return (
-                  <li key={item.href}>
-                    <Link href={item.href} className={cn(
-                      "w-full flex items-center space-x-3 px-3 py-2 text-left rounded-lg transition-colors",
-                      isActive 
-                        ? "bg-automotive-blue text-white" 
-                        : "text-gray-700 hover:bg-gray-100"
-                    )}>
-                      <Icon className="h-5 w-5" />
-                      <span>{item.name}</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </li>
+          {!isCollapsed && (
+            <li>
+              <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                Documenti
+              </div>
+            </li>
+          )}
           
-          {otherItems.map((item) => {
-            const Icon = item.icon;
+          {documentItems.map((item) => {
             const isActive = location === item.href;
-            
             return (
               <li key={item.href}>
-                <Link href={item.href} className={cn(
-                  "w-full flex items-center space-x-3 px-3 py-2 text-left rounded-lg transition-colors",
-                  isActive 
-                    ? "bg-automotive-blue text-white" 
-                    : "text-gray-700 hover:bg-gray-100"
-                )}>
-                  <Icon className="h-5 w-5" />
-                  <span>{item.name}</span>
-                </Link>
+                {renderNavItem(item, isActive)}
+              </li>
+            );
+          })}
+          
+          {otherItems.map((item) => {
+            const isActive = location === item.href;
+            return (
+              <li key={item.href}>
+                {renderNavItem(item, isActive)}
               </li>
             );
           })}

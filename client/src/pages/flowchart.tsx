@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { GitBranch, Plus, Package, Building2, FileText, Calendar, User, Edit } from "lucide-react";
+import { GitBranch, Plus, Package, Building2, FileText, Calendar, User, Edit, Eye } from "lucide-react";
 import { clientsApi, productsApi, productVersionsApi, flowChartsApi } from "@/lib/api";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +42,28 @@ export default function FlowChart() {
     queryKey: ["/api/product-versions", selectedVersion, "flowcharts"],
     queryFn: () => selectedVersion ? flowChartsApi.getByVersion(selectedVersion) : Promise.resolve([]),
     enabled: !!selectedVersion,
+  });
+
+  // Simplified query to get all flow charts with their context
+  const { data: allFlowCharts = [] } = useQuery({
+    queryKey: ["/api/flowcharts/all"],
+    queryFn: async () => {
+      // Get all flowcharts by getting all versions and their charts
+      const allChartsPromises = versions.map(async (version) => {
+        const charts = await flowChartsApi.getByVersion(version.id);
+        const product = products.find(p => p.id === version.productId);
+        const client = clients.find(c => c.id === product?.clientId);
+        return charts.map(chart => ({ 
+          ...chart, 
+          version, 
+          product: product || { code: 'N/A', description: 'N/A' }, 
+          client: client || { code: 'N/A', companyName: 'N/A' }
+        }));
+      });
+      const results = await Promise.all(allChartsPromises);
+      return results.flat();
+    },
+    enabled: versions.length > 0,
   });
 
   const createFlowChartMutation = useMutation({
@@ -217,6 +239,76 @@ export default function FlowChart() {
         </Dialog>
       </div>
 
+      {/* Default Flow Charts Table */}
+      {!selectedVersion && allFlowCharts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <FileText className="h-5 w-5" />
+              <span>Tutti i Flow Chart</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">Nome</th>
+                    <th className="text-left p-2">Cliente</th>
+                    <th className="text-left p-2">Prodotto</th>
+                    <th className="text-left p-2">Versione</th>
+                    <th className="text-left p-2">Ultima Modifica</th>
+                    <th className="text-left p-2">Azioni</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allFlowCharts.map((chart) => (
+                    <tr key={chart.id} className="border-b hover:bg-gray-50">
+                      <td className="p-2 font-medium">{chart.name}</td>
+                      <td className="p-2">
+                        <div className="flex items-center space-x-2">
+                          <Badge variant="outline" className="text-xs">{chart.client.code}</Badge>
+                          <span className="text-xs text-gray-600">{chart.client.companyName}</span>
+                        </div>
+                      </td>
+                      <td className="p-2">
+                        <div className="text-xs">
+                          <div className="font-medium">{chart.product.code}</div>
+                          <div className="text-gray-500">{chart.product.description}</div>
+                        </div>
+                      </td>
+                      <td className="p-2">
+                        <Badge variant="secondary">{chart.version.versionNumber}</Badge>
+                      </td>
+                      <td className="p-2 text-xs text-gray-500">
+                        {new Date(chart.updatedAt).toLocaleDateString()}
+                      </td>
+                      <td className="p-2">
+                        <div className="flex space-x-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedClient(chart.client.id);
+                              setSelectedProduct(chart.product.id);
+                              setSelectedVersion(chart.version.id);
+                              setEditingFlowChart(chart);
+                            }}
+                            className="h-7 px-2"
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Context Information */}
       {selectedVersionData && (
         <Card>
@@ -359,8 +451,8 @@ export default function FlowChart() {
         </Card>
       )}
 
-      {/* No Version Selected */}
-      {!selectedVersion && (
+      {/* No Version Selected and No Flow Charts */}
+      {!selectedVersion && allFlowCharts.length === 0 && (
         <Card className="min-h-screen">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -371,16 +463,16 @@ export default function FlowChart() {
           <CardContent>
             <div className="text-center py-12">
               <GitBranch className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Seleziona Versione Prodotto</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Nessun Flow Chart Disponibile</h3>
               <p className="text-gray-600 mb-4">
-                Per iniziare a creare un flow chart, seleziona prima cliente, prodotto e versione
+                Non ci sono flow chart nel sistema. Crea il primo selezionando cliente, prodotto e versione.
               </p>
               <Button 
                 onClick={() => setIsNewFlowDialogOpen(true)}
                 className="bg-automotive-blue hover:bg-blue-700"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Seleziona Versione
+                Crea Primo Flow Chart
               </Button>
             </div>
           </CardContent>
