@@ -3,7 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
   insertClientSchema, insertProductSchema, insertProductVersionSchema, 
-  insertProcessPhaseSchema, insertFlowChartSchema, insertFmeaSchema, insertControlPlanSchema 
+  insertProcessPhaseSchema, insertFlowChartSchema, insertFmeaSchema, insertControlPlanSchema,
+  type InsertProductVersion
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -196,7 +197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = serverProductVersionSchema.partial().parse(req.body);
       
       // Convert string date to Date object if present
-      const versionData = validatedData.versionDate ? {
+      const versionData: Partial<InsertProductVersion> = validatedData.versionDate ? {
         ...validatedData,
         versionDate: new Date(validatedData.versionDate)
       } : validatedData;
